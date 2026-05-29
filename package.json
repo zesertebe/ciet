@@ -1,0 +1,62 @@
+{
+  "name": "ciet",
+  "version": "1.0.0",
+  "description": "Create HTML components without HTML — just JavaScript/TypeScript",
+  "main": "dist/content.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/content.js",
+      "require": "./dist/content.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "webpack --mode production --config ./webpack.config.prod.js",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:all": "npm run build && npm run build:types",
+    "prepack": "npm run build:all",
+    "prepublishOnly": "npm run build:all",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zesertebe/ciet.git"
+  },
+  "keywords": [
+    "html",
+    "dom",
+    "components",
+    "typescript",
+    "reactive",
+    "signals",
+    "spa",
+    "router",
+    "ui"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zesertebe/ciet/issues"
+  },
+  "homepage": "https://github.com/zesertebe/ciet#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "babel-loader": "^10.1.1",
+    "html-webpack-plugin": "^5.6.7",
+    "ts-loader": "^9.5.7",
+    "typescript": "^5.7.0",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3"
+  }
+}

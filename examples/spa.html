@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ciet — SPA Router demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f5f5; }
+    nav { background: #0066ff; padding: 12px 24px; display: flex; gap: 16px; }
+    nav a { color: #fff; text-decoration: none; font-weight: 500; padding: 4px 12px; border-radius: 4px; }
+    nav a:hover { background: rgba(255,255,255,.15); }
+    .content { max-width: 640px; margin: 40px auto; padding: 0 16px; }
+    .page { background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
+    .page h1 { margin-top: 0; }
+    .user-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 8px 0; }
+    .user-card h3 { margin: 0 0 4px; }
+    .user-card p { margin: 0; color: #666; }
+    .not-found { text-align: center; color: #999; padding: 48px; }
+    .not-found h1 { font-size: 64px; margin: 0; }
+  </style>
+</head>
+<body>
+  <nav id="nav"></nav>
+  <div class="content" id="app"></div>
+
+  <script src="../dist/content.js"></script>
+  <script>
+    const { router, effect } = Ciet
+
+    // --- Componentes de página ---
+
+    function HomePage() {
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Inicio" }),
+        Ciet.create("p", { text: "Bienvenido a la demo SPA con ciet. Usa el menú de arriba para navegar." }),
+        Ciet.create("p", { text: "Esta es una Single Page Application construida sin frameworks, solo con ciet." }),
+      ]})
+    }
+
+    function AboutPage() {
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Acerca de" }),
+        Ciet.create("p", { text: "ciet es una librería liviana para crear componentes HTML con JavaScript/TypeScript." }),
+        Ciet.create("p", { text: "Incluye creación de elementos, reactividad con signals y router SPA." }),
+        Ciet.create("p", { text: "Todo en ~2 KB gzipped, sin dependencias." }),
+      ]})
+    }
+
+    const users = [
+      { id: "1", name: "Ana García", email: "ana@example.com" },
+      { id: "2", name: "Bob Martínez", email: "bob@example.com" },
+      { id: "3", name: "Carlos López", email: "carlos@example.com" },
+    ]
+
+    function UsersPage() {
+      const list = Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Usuarios" }),
+      ]})
+
+      users.forEach(u => {
+        Ciet.create("div", { class: "user-card", container: list, events: {
+          click: () => myRouter.navigate(`/users/${u.id}`)
+        }, children: [
+          Ciet.create("h3", { text: u.name }),
+          Ciet.create("p", { text: u.email }),
+        ]})
+      })
+
+      return list
+    }
+
+    function UserPage(params) {
+      const user = users.find(u => u.id === params.id)
+      if (!user) {
+        return Ciet.create("div", { class: "page", children: [
+          Ciet.create("h1", { text: "Usuario no encontrado" }),
+          Ciet.create("p", { text: `No existe un usuario con id: ${params.id}` }),
+        ]})
+      }
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: user.name }),
+        Ciet.create("p", { text: `Email: ${user.email}` }),
+        Ciet.create("p", { text: `ID: ${user.id}` }),
+        Ciet.create("br"),
+        Ciet.create("a", { href: "#/users", text: "← Volver a usuarios" }),
+      ]})
+    }
+
+    function NotFoundPage() {
+      return Ciet.create("div", { class: "not-found page", children: [
+        Ciet.create("h1", { text: "404" }),
+        Ciet.create("p", { text: "Página no encontrada" }),
+      ]})
+    }
+
+    // --- Menú de navegación ---
+    const myRouter = router({
+      "/": HomePage,
+      "/about": AboutPage,
+      "/users": UsersPage,
+      "/users/:id": UserPage,
+    }, {
+      outlet: "#app",
+      fallback: NotFoundPage,
+    })
+
+    const nav = document.getElementById("nav")
+    const links = [
+      { to: "/", text: "Inicio" },
+      { to: "/about", text: "Acerca" },
+      { to: "/users", text: "Usuarios" },
+    ]
+    links.forEach(l => {
+      Ciet.create("a", { href: `#${l.to}`, text: l.text, container: nav })
+    })
+  </script>
+</body>
+</html>
