@@ -6,7 +6,7 @@
 ## Instalación
 
 ```bash
-npm install ciet
+npm install @zesertebe/ciet
 ```
 
 ## Import
