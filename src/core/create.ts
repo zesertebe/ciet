@@ -1,10 +1,18 @@
 export type CSSPropValue = string | number | null | undefined
 
+type CSSPropertyName = {
+  [K in keyof CSSStyleDeclaration]: CSSStyleDeclaration[K] extends string ? K : never
+}[keyof CSSStyleDeclaration]
+
+export type StyleProperties = {
+  [K in CSSPropertyName]?: CSSPropValue
+}
+
 export type CreateParams = {
   container?: string | HTMLElement
   class?: string
   id?: string
-  style?: Record<string, CSSPropValue>
+  style?: StyleProperties
   attrs?: Record<string, string | number | boolean | null | undefined>
   dataset?: Record<string, string | number | boolean | null | undefined>
   events?: Record<string, EventListenerOrEventListenerObject | null | undefined>
@@ -33,11 +41,12 @@ function setClasses(el: HTMLElement, classStr: string, classNames?: string[]): v
   tokens.forEach(c => el.classList.add(c))
 }
 
-function setStyles(el: HTMLElement, style: Record<string, CSSPropValue>): void {
+function setStyles(el: HTMLElement, style: StyleProperties): void {
   for (const key of Object.keys(style)) {
-    const value = style[key]
+    const k = key as CSSPropertyName
+    const value = style[k]
     if (value === null || value === undefined) continue
-    (el.style as any)[key] = String(value)
+    (el.style as any)[k] = String(value)
   }
 }
 

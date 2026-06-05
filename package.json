@@ -1,5 +1,5 @@
 {
-  "name": "ciet",
+  "name": "@zesertebe/ciet",
   "version": "1.0.0",
   "description": "Create HTML components without HTML — just JavaScript/TypeScript",
   "main": "dist/content.js",
