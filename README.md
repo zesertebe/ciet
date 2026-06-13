@@ -13,24 +13,24 @@ npm install @zesertebe/ciet
 
 ```typescript
 // ES module (bundlers: webpack, vite, etc.)
-import Ciet from "ciet"
+import Ciet from "@zesertebe/ciet"
 const { signal, computed, effect } = Ciet
 
 // O con destructuring directo si tu bundler lo soporta:
-import Ciet, { signal, computed, effect, batch, router } from "ciet"
+import Ciet, { signal, computed, effect, batch, router } from "@zesertebe/ciet"
 
 // CommonJS (Node.js)
-const Ciet = require("ciet")
+const Ciet = require("@zesertebe/ciet")
 
 // Script tag directo (UMD global)
-// <script src="node_modules/ciet/dist/content.js"></script>
+// <script src="node_modules/@zesertebe/ciet/dist/content.js"></script>
 // window.Ciet ya está disponible
 ```
 
 ## Uso básico
 
 ```typescript
-import Ciet from "ciet"
+import Ciet from "@zesertebe/ciet"
 
 const div = Ciet.div({ container: "app", classNames: ["container"] })
 div.textContent = "¡Hola mundo!"
@@ -171,19 +171,20 @@ Crea un router SPA con navegación hash-based. Detecta `hashchange` y renderiza 
 
 | Parámetro      | Tipo                          | Descripción                                      |
 |---------------|-------------------------------|--------------------------------------------------|
-| `routes`      | `Record<string, RouteComponent>` | Mapa de ruta → componente. `:param` para params dinámicos. |
-| `options.outlet` | `string \| HTMLElement` *(opcional)* | Contenedor donde se renderiza. Default: `document.body` |
+| `routes`      | `Routes` | Mapa de ruta → componente o config con guards. `:param` para params dinámicos. |
+| `options.outlet` | `string \| HTMLElement` *(opcional)* | Contenedor donde se renderiza. Default: `document.body`. Acepta `"#app"` o `"app"`. |
 | `options.fallback` | `RouteComponent` *(opcional)* | Componente para rutas no encontradas (404).      |
+| `options.beforeEach` | `GuardFn \| GuardFn[]` *(opcional)* | Guardia(s) global(es) que se ejecutan antes de cada navegación. |
 
 **Retorna:** `Router` con métodos:
 
 | Método         | Descripción                                    |
 |---------------|------------------------------------------------|
-| `.navigate(path)` | Navega a una ruta. Ej: `router.navigate("/about")` |
+| `.navigate(path)` | Navega a una ruta. Ej: `router.navigate("/about")`. Respeta guards. |
 | `.go(delta)`  | Navega en el historial: `router.go(-1)` (atrás) |
-| `.current`    | Ruta actual (getter)                           |
+| `.current`    | Ruta actual (getter) — última ruta renderizada exitosamente |
 | `.destroy()`  | Limpia el listener de hashchange               |
-| `.link(params)` | Crea un `<a>` que navega con el router       |
+| `.link(params)` | Crea un `<a>` que navega con el router (integrado con guards) |
 
 ```typescript
 const router = Ciet.router({
@@ -201,6 +202,76 @@ router.navigate("/about")
 // Link con el router
 router.link({ to: "/about", text: "Acerca" })
 ```
+
+#### Guards de navegación (`GuardFn`)
+
+Los guards permiten controlar el acceso a las rutas mediante funciones que se ejecutan antes de navegar.
+
+```typescript
+type GuardContext = {
+  from: string                       // ruta actual
+  to: string                         // ruta destino
+  params: Record<string, string>     // parámetros de la ruta destino
+}
+
+type GuardFn = (ctx: GuardContext) => boolean | string
+// true  → permite la navegación
+// false → bloquea (no hace nada, se queda donde está)
+// string → redirige a esa ruta
+```
+
+**Orden de ejecución:**
+
+1. `beforeEach` (global, en orden si es array)
+2. `beforeEnter` de la ruta destino (en orden si es array)
+
+Si cualquiera retorna `false` o un `string` (redirect), se detiene la cadena y no se ejecuta el componente.
+
+**Uso con ruta protegida:**
+
+```typescript
+// Ruta sin guard (componente directo)
+"/": HomePage,
+
+// Ruta con guard (config object)
+"/profile": {
+  component: ProfilePage,
+  beforeEnter: [
+    (ctx) => isLoggedIn.value ? true : "/login",
+  ],
+},
+
+// Múltiples guards
+"/admin": {
+  component: AdminPage,
+  beforeEnter: [
+    (ctx) => isLoggedIn.value ? true : "/login",
+    (ctx) => userRole.value === "admin" ? true : false,
+  ],
+},
+```
+
+**Guardia global:**
+
+```typescript
+const router = Ciet.router(routes, {
+  outlet: "#app",
+  fallback: NotFoundPage,
+  beforeEach: [
+    (ctx) => {
+      console.log(`${ctx.from} → ${ctx.to}`)
+      return true
+    },
+  ],
+})
+```
+
+Los guards capturan **todos** los tipos de navegación:
+- `router.navigate(path)` — programática
+- `router.link()` — clics en links del router
+- Botones de retroceso/avance del navegador
+- Cambio manual del hash en la URL
+- Carga inicial de la página con un hash directo (bookmarks)
 
 ## Reactividad
 
@@ -293,7 +364,7 @@ document.getElementById("app")?.removeChild(el)
 ### Ejemplo reactivo completo
 
 ```typescript
-import Ciet from "ciet"
+import Ciet from "@zesertebe/ciet"
 
 // Estado
 const count = Ciet.signal(0)
@@ -331,7 +402,7 @@ Ciet.create("div", {
 ## Ejemplos
 
 ```typescript
-import Ciet from "ciet"
+import Ciet from "@zesertebe/ciet"
 
 // --- Tarjeta completa en una sola expresión ---
 const card = Ciet.create("div", {

@@ -6,17 +6,30 @@
   <title>ciet — SPA Router demo</title>
   <style>
     body { font-family: system-ui, sans-serif; margin: 0; background: #f5f5f5; }
-    nav { background: #0066ff; padding: 12px 24px; display: flex; gap: 16px; }
+    nav { background: #0066ff; padding: 12px 24px; display: flex; gap: 16px; align-items: center; }
     nav a { color: #fff; text-decoration: none; font-weight: 500; padding: 4px 12px; border-radius: 4px; }
     nav a:hover { background: rgba(255,255,255,.15); }
+    nav .spacer { flex: 1; }
+    .auth-badge { color: #fff; font-size: 13px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,.4); }
+    .auth-badge:hover { background: rgba(255,255,255,.1); }
     .content { max-width: 640px; margin: 40px auto; padding: 0 16px; }
     .page { background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
     .page h1 { margin-top: 0; }
-    .user-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 8px 0; }
+    .info-box { background: #e8f4fd; border-left: 4px solid #0066ff; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 14px; }
+    .warning-box { background: #fff3e0; border-left: 4px solid #ff9800; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 14px; }
+    .success-box { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 14px; }
+    .user-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 8px 0; cursor: pointer; }
+    .user-card:hover { background: #fafafa; }
     .user-card h3 { margin: 0 0 4px; }
     .user-card p { margin: 0; color: #666; }
     .not-found { text-align: center; color: #999; padding: 48px; }
     .not-found h1 { font-size: 64px; margin: 0; }
+    .btn { display: inline-block; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+    .btn-primary { background: #0066ff; color: #fff; }
+    .btn-primary:hover { background: #0052cc; }
+    .btn-outline { background: transparent; border: 1px solid #0066ff; color: #0066ff; }
+    .btn-outline:hover { background: #e8f0fe; }
+    input[type="text"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 200px; }
   </style>
 </head>
 <body>
@@ -25,15 +38,52 @@
 
   <script src="../dist/content.js"></script>
   <script>
-    const { router, effect } = Ciet
+    const { router, effect, signal, computed } = Ciet
+
+    // --- Auth state ---
+    const isLoggedIn = signal(false)
+    const userRole = signal("guest")  // "guest" | "user" | "admin"
+    const currentUser = signal("")
+
+    const authLabel = computed(() =>
+      isLoggedIn.value
+        ? `${currentUser.value} (${userRole.value}) — Cerrar sesión`
+        : "Iniciar sesión"
+    )
+
+    function toggleAuth() {
+      if (isLoggedIn.value) {
+        isLoggedIn.value = false
+        userRole.value = "guest"
+        currentUser.value = ""
+      } else {
+        isLoggedIn.value = true
+        userRole.value = "user"
+        currentUser.value = "DemoUser"
+      }
+    }
+
+    // --- Guard helpers ---
+    function requireAuth() {
+      return isLoggedIn.value ? true : "/login"
+    }
+
+    function requireRole(role) {
+      return (ctx) => userRole.value === role ? true : false
+    }
 
     // --- Componentes de página ---
 
     function HomePage() {
       return Ciet.create("div", { class: "page", children: [
         Ciet.create("h1", { text: "Inicio" }),
-        Ciet.create("p", { text: "Bienvenido a la demo SPA con ciet. Usa el menú de arriba para navegar." }),
-        Ciet.create("p", { text: "Esta es una Single Page Application construida sin frameworks, solo con ciet." }),
+        Ciet.create("p", { text: "Bienvenido a la demo SPA con ciet." }),
+        Ciet.create("p", { text: "Navega por las rutas para ver el sistema de guards en acción." }),
+        Ciet.create("div", { class: "info-box", children: [
+          Ciet.create("strong", { text: "¿Qué son los guards?" }),
+          Ciet.create("p", { text: "Los guards son funciones que se ejecutan antes de navegar a una ruta. Pueden permitir, bloquear o redirigir la navegación." }),
+          Ciet.create("p", { text: "Prueba a navegar a /profile (requiere login) o a /admin (requiere rol admin)." }),
+        ]}),
       ]})
     }
 
@@ -41,35 +91,115 @@
       return Ciet.create("div", { class: "page", children: [
         Ciet.create("h1", { text: "Acerca de" }),
         Ciet.create("p", { text: "ciet es una librería liviana para crear componentes HTML con JavaScript/TypeScript." }),
-        Ciet.create("p", { text: "Incluye creación de elementos, reactividad con signals y router SPA." }),
-        Ciet.create("p", { text: "Todo en ~2 KB gzipped, sin dependencias." }),
+        Ciet.create("p", { text: "Incluye creación de elementos, reactividad con signals y router SPA con guards." }),
+        Ciet.create("p", { text: "Todo en ~2.7 KB gzipped, sin dependencias." }),
       ]})
     }
 
-    const users = [
-      { id: "1", name: "Ana García", email: "ana@example.com" },
-      { id: "2", name: "Bob Martínez", email: "bob@example.com" },
-      { id: "3", name: "Carlos López", email: "carlos@example.com" },
-    ]
+    function LoginPage() {
+      const msg = isLoggedIn.value
+        ? "Ya has iniciado sesión. ¿Quieres ir a tu perfil?"
+        : "Haz clic en \"Iniciar sesión\" en la barra superior para acceder a /profile y /admin."
+
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Iniciar sesión" }),
+        Ciet.create("div", { class: isLoggedIn.value ? "success-box" : "info-box", children: [
+          Ciet.create("p", { text: msg }),
+        ]}),
+        isLoggedIn.value
+          ? Ciet.button({
+              class: "btn btn-primary",
+              text: "Ir a mi perfil",
+              clickEvent: () => myRouter.navigate("/profile"),
+            })
+          : Ciet.button({
+              class: "btn btn-primary",
+              text: "Iniciar sesión (demo)",
+              clickEvent: () => {
+                toggleAuth()
+                myRouter.navigate("/profile")
+              },
+            }),
+      ]})
+    }
+
+    function ProfilePage() {
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Perfil" }),
+        Ciet.create("p", { text: `Bienvenido, ${currentUser.value}!` }),
+        Ciet.create("p", { text: "Esta página solo es visible cuando has iniciado sesión." }),
+        Ciet.create("div", { class: "success-box", children: [
+          Ciet.create("p", { text: "✅ El guard de /profile te redirigió a /login porque no estabas autenticado." }),
+        ]}),
+        Ciet.create("br"),
+        Ciet.button({
+          class: "btn btn-outline",
+          text: "Cerrar sesión",
+          clickEvent: () => {
+            toggleAuth()
+            myRouter.navigate("/")
+          },
+        }),
+      ]})
+    }
+
+    function AdminPage() {
+      return Ciet.create("div", { class: "page", children: [
+        Ciet.create("h1", { text: "Admin" }),
+        Ciet.create("p", { text: `Panel de administración — ${currentUser.value}` }),
+        Ciet.create("div", { class: "success-box", children: [
+          Ciet.create("p", { text: "✅ Solo los usuarios con rol 'admin' pueden ver esta página." }),
+        ]}),
+        isLoggedIn.value && userRole.value !== "admin"
+          ? Ciet.create("div", { class: "warning-box", children: [
+              Ciet.create("p", { text: "Nota: tu rol actual es '" + userRole.value + "'. El guard bloquea el acceso sin redirección." }),
+            ]})
+          : null,
+        Ciet.create("br"),
+        Ciet.button({
+          class: "btn btn-primary",
+          text: "Obtener rol admin (demo)",
+          clickEvent: () => {
+            userRole.value = "admin"
+            myRouter.navigate("/admin")
+          },
+        }),
+      ]})
+    }
 
     function UsersPage() {
+      const users = [
+        { id: "1", name: "Ana García", email: "ana@example.com" },
+        { id: "2", name: "Bob Martínez", email: "bob@example.com" },
+        { id: "3", name: "Carlos López", email: "carlos@example.com" },
+      ]
+
       const list = Ciet.create("div", { class: "page", children: [
         Ciet.create("h1", { text: "Usuarios" }),
+        Ciet.create("p", { text: "Haz clic en un usuario para ver su detalle." }),
       ]})
 
       users.forEach(u => {
-        Ciet.create("div", { class: "user-card", container: list, events: {
-          click: () => myRouter.navigate(`/users/${u.id}`)
-        }, children: [
-          Ciet.create("h3", { text: u.name }),
-          Ciet.create("p", { text: u.email }),
-        ]})
+        Ciet.create("div", {
+          class: "user-card",
+          container: list,
+          events: { click: () => myRouter.navigate(`/users/${u.id}`) },
+          children: [
+            Ciet.create("h3", { text: u.name }),
+            Ciet.create("p", { text: u.email }),
+          ],
+        })
       })
 
       return list
     }
 
     function UserPage(params) {
+      const users = [
+        { id: "1", name: "Ana García", email: "ana@example.com" },
+        { id: "2", name: "Bob Martínez", email: "bob@example.com" },
+        { id: "3", name: "Carlos López", email: "carlos@example.com" },
+      ]
       const user = users.find(u => u.id === params.id)
       if (!user) {
         return Ciet.create("div", { class: "page", children: [
@@ -82,7 +212,7 @@
         Ciet.create("p", { text: `Email: ${user.email}` }),
         Ciet.create("p", { text: `ID: ${user.id}` }),
         Ciet.create("br"),
-        Ciet.create("a", { href: "#/users", text: "← Volver a usuarios" }),
+        myRouter.link({ to: "/users", text: "← Volver a usuarios" }),
       ]})
     }
 
@@ -93,26 +223,57 @@
       ]})
     }
 
-    // --- Menú de navegación ---
+    // --- Router con guards ---
     const myRouter = router({
       "/": HomePage,
       "/about": AboutPage,
+      "/login": LoginPage,
+      "/profile": {
+        component: ProfilePage,
+        beforeEnter: [requireAuth],
+      },
+      "/admin": {
+        component: AdminPage,
+        beforeEnter: [
+          requireAuth,
+          requireRole("admin"),
+        ],
+      },
       "/users": UsersPage,
       "/users/:id": UserPage,
     }, {
       outlet: "#app",
       fallback: NotFoundPage,
+      beforeEach: (ctx) => {
+        console.log(`[guard] ${ctx.from} → ${ctx.to}`, ctx.params)
+        return true
+      },
     })
 
+    // --- Botón de auth en la barra de navegación ---
+    const authBtn = Ciet.create("span", { class: "auth-badge" })
+    effect(() => {
+      authBtn.textContent = authLabel.value
+    })
+    authBtn.addEventListener("click", () => {
+      toggleAuth()
+    })
+
+    // --- Menú de navegación ---
     const nav = document.getElementById("nav")
     const links = [
       { to: "/", text: "Inicio" },
       { to: "/about", text: "Acerca" },
+      { to: "/login", text: "Login" },
+      { to: "/profile", text: "Perfil" },
+      { to: "/admin", text: "Admin" },
       { to: "/users", text: "Usuarios" },
     ]
     links.forEach(l => {
-      Ciet.create("a", { href: `#${l.to}`, text: l.text, container: nav })
+      myRouter.link({ to: l.to, text: l.text, container: nav })
     })
+    Ciet.create("div", { class: "spacer", container: nav })
+    nav.appendChild(authBtn)
   </script>
 </body>
 </html>

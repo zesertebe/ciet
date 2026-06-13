@@ -4,11 +4,12 @@ import { text } from "./core/text"
 import { signal, computed, effect, batch } from "./reactive/signal"
 import type { Signal, WritableSignal } from "./reactive/signal"
 import { router } from "./core/router"
-import type { Router, Routes, RouterOptions } from "./core/router"
+import type { Router, Routes, RouterOptions, GuardFn, GuardContext, GuardedRouteConfig, RouteComponent } from "./core/router"
 
 export type { CreateParams }
 export type { Signal, WritableSignal }
-export type { Router, Routes, RouterOptions }
+export type { Router, Routes, RouterOptions, GuardFn, GuardContext, GuardedRouteConfig }
+export type { RouteComponent }
 export { signal, computed, effect, batch, router }
 
 export type ElementType = {

@@ -88,7 +88,8 @@ function appendChildren(el: HTMLElement, children: Node[]): void {
 function resolveContainer(container?: string | HTMLElement): HTMLElement | null {
   if (!container) return null
   if (typeof container === "string") {
-    return document.getElementById(container) ?? document.body
+    const id = container.startsWith("#") ? container.slice(1) : container
+    return document.getElementById(id) ?? document.body
   }
   return container
 }
