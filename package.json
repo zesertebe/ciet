@@ -1,6 +1,6 @@
 {
   "name": "@zesertebe/ciet",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Create HTML components without HTML — just JavaScript/TypeScript",
   "main": "dist/content.js",
   "types": "dist/index.d.ts",
